@@ -1,0 +1,17 @@
+[package]
+name = "stm32l15x"
+version = "0.1.0"
+authors = ["Tobias Kaupat <code@niondir.de>"]
+
+
+# This will enable link-time optimizations which give us potentially smaller binaries and allows us to avoid needing to define the __aeabi_unwind_cpp_pr0 symbol.
+# Not working since: xargo 0.3.10, cargo 0.25.0-nightly (e08f31018 2017-12-24)
+[profile.dev]
+lto = false
+
+[profile.release]
+lto = false
+
+[dependencies]
+compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins" }
+#libc = { version = "0.2", default-features = false }
