@@ -1,79 +1,135 @@
-# Rust STM32 Bootstrap example
+# `cortex-m-quickstart`
 
-The goal of this repo is to help everyone to get started with RustLang on a STM32 micro controller.
-There is a lot of progress in the community but the initial setup is still painful.
+> A template for building applications for ARM Cortex-M microcontrollers
 
-Scope of the project:
-* Linker file
-* Relevant IO Mappings to configure and toggle IO-Pins
-* Main function for a blinking LED
+This project is developed and maintained by the [Cortex-M team][team].
 
-The codebase does not make any assumption about your eval board. We like to collect linker files and IO mappings for as many architectures as possible to enable everybody to get started with rust in the embedded world.
+## Dependencies
 
-**If you have any problems running this code please file an git issue.**
+To build embedded programs using this template you'll need:
 
-Useful sources:
-* http://shadetail.com/blog/rust-on-embedded-starting-up/
-* http://www.acrawford.com/2017/03/09/rust-on-the-cortex-m3.html
-* http://blog.japaric.io/quickstart/
-* https://users.rust-lang.org/t/rust-for-embedded-development-where-we-are-and-whats-missing/10861
+- Rust 1.31, 1.30-beta, nightly-2018-09-13 or a newer toolchain. e.g. `rustup
+  default beta`
 
-# Usage
+- The `cargo generate` subcommand. [Installation
+  instructions](https://github.com/ashleygwilliams/cargo-generate#installation).
 
-To get started you need **rustup** from https://rustup.rs/
+- `rust-std` components (pre-compiled `core` crate) for the ARM Cortex-M
+  targets. Run:
 
-Please follow the instruction to install the "Rust Visual C++ prerequisites" carefully! 
+``` console
+$ rustup target add thumbv6m-none-eabi thumbv7m-none-eabi thumbv7em-none-eabi thumbv7em-none-eabihf
+```
 
-Verify the installation using ``rustup show``
+## Using this template
 
-Add the nightly toolchain:
+**NOTE**: This is the very short version that only covers building programs. For
+the long version, which additionally covers flashing, running and debugging
+programs, check [the embedded Rust book][book].
 
-    rustup toolchain add nightly
-    
-Add rust sources:
+[book]: https://rust-embedded.github.io/book
 
-    rustup component add rust-src
-    
-Use the nightly builds:
-    
-    rustup override set nightly
+0. Before we begin you need to identify some characteristics of the target
+  device as these will be used to configure the project:
 
-**Cross-compiling using Xargo**
+- The ARM core. e.g. Cortex-M3.
 
-Xargo is a tool to help with cross-compiling in Rust. Xargo is a wrapper around cargo that handles compiling Rust’s core libraries for your target.
- 
- Install Xargo:
- 
-    cargo install xargo
-    
-To verify the installation run
+- Does the ARM core include an FPU? Cortex-M4**F** and Cortex-M7**F** cores do.
 
-    xargo --version
-    
-The output should show something like this:
+- How much Flash memory and RAM does the target device has? e.g. 256 KiB of
+  Flash and 32 KiB of RAM.
 
-    xargo 0.3.10
-    cargo 0.25.0-nightly (e08f31018 2017-12-24)
+- Where are Flash memory and RAM mapped in the address space? e.g. RAM is
+  commonly located at address `0x2000_0000`.
 
-Navigate to the subdir for your architecture and build the project with
+You can find this information in the data sheet or the reference manual of your
+device.
 
-    xargo build
+In this example we'll be using the STM32F3DISCOVERY. This board contains an
+STM32F303VCT6 microcontroller. This microcontroller has:
 
-## Useful commands
+- A Cortex-M4F core that includes a single precision FPU
 
-Get an object dump to have a look at the compiled result:
+- 256 KiB of Flash located at address 0x0800_0000.
 
-    arm-none-eabi-objdump -d target/thumbv7m-none-eabi/debug/STM32L15x
+- 40 KiB of RAM located at address 0x2000_0000. (There's another RAM region but
+  for simplicity we'll ignore it).
 
-Convert the binary output file into hex format (might be easier to flash, depending on your tools)
+1. Instantiate the template.
 
-    arm-none-eabi-objcopy -Oihex ./target/thumbv7m-none-eabi/debug/STM32L15x ./STM32L15x.hex
+``` console
+$ cargo generate --git https://github.com/rust-embedded/cortex-m-quickstart
+ Project Name: app
+ Creating project called `app`...
+ Done! New project created /tmp/app
 
-# Supported hardware
-**STM32 Cortex-M3**
+$ cd app
+```
 
-* STM32L151CB-A
+2. Set a default compilation target. There are four options as mentioned at the
+   bottom of `.cargo/config`. For the STM32F303VCT6, which has a Cortex-M4F
+   core, we'll pick the `thumbv7em-none-eabihf` target.
 
+``` console
+$ tail -n6 .cargo/config
+```
 
-# Contribute
-We need help to collect linker files and memory mappings for as many Chips as possible. Any contribution is welcome.
+``` toml
+[build]
+# Pick ONE of these compilation targets
+# target = "thumbv6m-none-eabi"    # Cortex-M0 and Cortex-M0+
+# target = "thumbv7m-none-eabi"    # Cortex-M3
+# target = "thumbv7em-none-eabi"   # Cortex-M4 and Cortex-M7 (no FPU)
+target = "thumbv7em-none-eabihf" # Cortex-M4F and Cortex-M7F (with FPU)
+```
+
+3. Enter the memory region information into the `memory.x` file.
+
+``` console
+$ cat memory.x
+/* Linker script for the STM32F303VCT6 */
+MEMORY
+{
+  /* NOTE 1 K = 1 KiBi = 1024 bytes */
+  FLASH : ORIGIN = 0x08000000, LENGTH = 256K
+  RAM : ORIGIN = 0x20000000, LENGTH = 40K
+}
+```
+
+4. Build the template application or one of the examples.
+
+``` console
+$ cargo build
+```
+
+## VS Code
+
+This template includes launch configurations for debugging CortexM programs with Visual Studio Code located in the `.vscode/` directory.  
+See [.vscode/README.md](./.vscode/README.md) for more information.  
+If you're not using VS Code, you can safely delete the directory from the generated project.
+
+# License
+
+This template is licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+  http://www.apache.org/licenses/LICENSE-2.0)
+
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
+
+## Code of Conduct
+
+Contribution to this crate is organized under the terms of the [Rust Code of
+Conduct][CoC], the maintainer of this crate, the [Cortex-M team][team], promises
+to intervene to uphold that code of conduct.
+
+[CoC]: https://www.rust-lang.org/policies/code-of-conduct
+[team]: https://github.com/rust-embedded/wg#the-cortex-m-team
