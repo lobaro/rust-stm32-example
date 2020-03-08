@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-extern crate device;
-
 // release profile: minimize the binary size of the application
 // TODO: We want some custom panic handler that logs & resets
 #[cfg(not(debug_assertions))]
@@ -27,7 +25,6 @@ use cortex_m_rt::exception;
 use cortex_m_rt::{entry, ExceptionFrame};
 use cortex_m_semihosting::hio::HStdout;
 use cortex_m_semihosting::{debug, hio, hprintln};
-use device::interrupt;
 
 #[entry]
 fn main() -> ! {
@@ -100,16 +97,4 @@ fn HardFault(ef: &ExceptionFrame) -> ! {
     }
 
     loop {}
-}
-
-// Interrupt handler for the Timer2 interrupt
-#[interrupt]
-fn TIM2() {
-    // ..
-    // Clear reason for the generated interrupt request
-
-    static mut COUNT: u32 = 0;
-
-    // `COUNT` has type `&mut u32` and it's safe to use
-    *COUNT += 1;
 }
